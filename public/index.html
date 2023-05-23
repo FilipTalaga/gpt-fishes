@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Fish Bouncing Simulation</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #001f3f; /* Dark blue */
+      }
+
+      canvas {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script>
+      const canvas = document.getElementById('canvas');
+      const context = canvas.getContext('2d');
+
+      let canvasWidth, canvasHeight;
+      const fishSize = 50;
+      const bubbleSize = 5;
+      const numBubbles = 50;
+
+      // Fish class
+      class Fish {
+        constructor(x, y, dx, dy, color) {
+          this.x = x;
+          this.y = y;
+          this.dx = dx;
+          this.dy = dy;
+          this.color = color;
+          this.rotation = 0;
+        }
+
+        draw() {
+          context.save();
+          context.translate(this.x, this.y);
+          context.rotate(this.rotation);
+
+          // Body
+          context.beginPath();
+          context.fillStyle = this.color;
+          context.moveTo(0, 0);
+          context.lineTo(-fishSize, -fishSize / 4);
+          context.lineTo(-fishSize, fishSize / 4);
+          context.closePath();
+          context.fill();
+
+          // Tail
+          context.beginPath();
+          context.fillStyle = this.color;
+          context.moveTo(0, 0);
+          context.lineTo((-fishSize * 3) / 4, -fishSize / 2);
+          context.lineTo((-fishSize * 3) / 4, fishSize / 2);
+          context.closePath();
+          context.fill();
+
+          // Fin
+          context.beginPath();
+          context.fillStyle = this.color;
+          context.moveTo(-fishSize / 2, -fishSize / 8);
+          context.lineTo(-fishSize, -fishSize / 2);
+          context.lineTo(-fishSize, fishSize / 2);
+          context.closePath();
+          context.fill();
+
+          // Eye
+          context.beginPath();
+          context.fillStyle = 'white';
+          const eyeX = -fishSize / 4;
+          const eyeY = -fishSize / 8;
+          const eyeRadius = fishSize / 10;
+          context.arc(eyeX, eyeY, eyeRadius, 0, Math.PI * 2);
+          context.closePath();
+          context.fill();
+
+          // Pupil
+          const pupilRadius = fishSize / 20;
+          const pupilX = eyeX + (this.dx * eyeRadius) / 5;
+          const pupilY = eyeY + (this.dy * eyeRadius) / 5;
+          context.beginPath();
+          context.fillStyle = 'black';
+          context.arc(pupilX, pupilY, pupilRadius, 0, Math.PI * 2);
+          context.closePath();
+          context.fill();
+
+          context.restore();
+        }
+
+        update() {
+          if (this.x + fishSize >= canvasWidth || this.x <= fishSize) {
+            this.dx *= -1;
+            this.rotation = Math.atan2(this.dy, this.dx);
+          }
+          if (this.y + fishSize >= canvasHeight || this.y <= fishSize) {
+            this.dy *= -1;
+            this.rotation = Math.atan2(this.dy, this.dx);
+          }
+          this.x += this.dx;
+          this.y += this.dy;
+        }
+      }
+
+      // Bubble class
+      class Bubble {
+        constructor(x, y, size, speed) {
+          this.x = x;
+          this.y = y;
+          this.size = size;
+          this.speed = speed;
+        }
+
+        draw() {
+          context.beginPath();
+          context.fillStyle = 'rgba(255, 255, 255, 0.3)'; /* Semi-transparent white */
+          context.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          context.closePath();
+          context.fill();
+        }
+
+        update() {
+          this.y -= this.speed;
+          if (this.y + this.size < 0) {
+            this.y = canvasHeight + this.size;
+          }
+        }
+      }
+
+      // Shark class
+      class Shark {
+        constructor(x, y, speed) {
+          this.x = x;
+          this.y = y;
+          this.speed = speed;
+          this.size = fishSize * 2;
+          this.rotation = 0;
+        }
+
+        draw() {
+          context.save();
+          context.translate(this.x, this.y);
+          context.rotate(this.rotation);
+
+          // Body
+          context.beginPath();
+          context.fillStyle = 'gray';
+          context.moveTo(0, -this.size / 2);
+          context.lineTo(-this.size * 2, -this.size / 4);
+          context.lineTo(-this.size * 3, 0);
+          context.lineTo(-this.size * 2, this.size / 4);
+          context.lineTo(0, this.size / 2);
+          context.closePath();
+          context.fill();
+
+          // Tail
+          context.beginPath();
+          context.fillStyle = 'gray';
+          context.moveTo(-this.size * 3, 0);
+          context.lineTo(-this.size * 4, -this.size / 4);
+          context.lineTo(-this.size * 4, this.size / 4);
+          context.closePath();
+          context.fill();
+
+          // Fins
+          context.beginPath();
+          context.fillStyle = 'gray';
+          context.moveTo(-this.size * 2, -this.size / 4);
+          context.lineTo(-this.size * 3, -this.size / 2);
+          context.lineTo(-this.size * 3, this.size / 2);
+          context.closePath();
+          context.fill();
+
+          // Teeth
+          const toothSize = this.size / 15;
+          const numTeeth = 10;
+          const toothSpacing = this.size / 6;
+          const toothStartX = -this.size * 2.5;
+          const toothStartY = -toothSize / 2;
+          context.beginPath();
+          context.fillStyle = 'white';
+          for (let i = 0; i < numTeeth; i++) {
+            const toothX = toothStartX + i * toothSpacing;
+            context.moveTo(toothX, toothStartY);
+            context.lineTo(toothX, toothStartY + toothSize);
+          }
+          context.closePath();
+          context.fill();
+
+          // Eye
+          context.beginPath();
+          context.fillStyle = 'white';
+          const eyeX = -this.size / 2.5;
+          const eyeY = -this.size / 5;
+          const eyeRadius = this.size / 15;
+          context.arc(eyeX, eyeY, eyeRadius, 0, Math.PI * 2);
+          context.closePath();
+          context.fill();
+
+          // Pupil
+          const pupilRadius = this.size / 30;
+          const pupilX = eyeX + (this.speed * eyeRadius) / 5;
+          const pupilY = eyeY;
+          context.beginPath();
+          context.fillStyle = 'black';
+          context.arc(pupilX, pupilY, pupilRadius, 0, Math.PI * 2);
+          context.closePath();
+          context.fill();
+
+          context.restore();
+        }
+
+        update() {
+          if (this.x + this.size >= canvasWidth || this.x <= this.size) {
+            this.speed *= -1;
+            this.rotation = Math.atan2(0, this.speed);
+          }
+          this.x += this.speed;
+        }
+      }
+
+      // Resize canvas to fit the screen
+      function resizeCanvas() {
+        canvasWidth = window.innerWidth;
+        canvasHeight = window.innerHeight;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+      }
+
+      // Initialize fishes
+      const fishes = [];
+      const numFishes = 10;
+      const colors = ['#FF4136', '#FF851B', '#FFDC00', '#7FDBFF', '#85144b', '#39CCCC'];
+
+      function initializeFishes() {
+        fishes.length = 0;
+        for (let i = 0; i < numFishes; i++) {
+          const x = Math.random() * (canvasWidth - fishSize * 2) + fishSize;
+          const y = Math.random() * (canvasHeight - fishSize * 2) + fishSize;
+          const dx = Math.random() * 2 - 1; // Random velocity between -1 and 1
+          const dy = Math.random() * 2 - 1;
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          const fish = new Fish(x, y, dx, dy, color);
+          fishes.push(fish);
+        }
+      }
+
+      // Initialize bubbles
+      const bubbles = [];
+
+      function initializeBubbles() {
+        bubbles.length = 0;
+        for (let i = 0; i < numBubbles; i++) {
+          const x = Math.random() * canvasWidth;
+          const y = Math.random() * canvasHeight;
+          const size = Math.random() * bubbleSize + 1;
+          const speed = Math.random() * 2 + 1;
+          const bubble = new Bubble(x, y, size, speed);
+          bubbles.push(bubble);
+        }
+      }
+
+      // Initialize shark
+      let shark;
+
+      function initializeShark() {
+        const x = canvasWidth / 2;
+        const y = canvasHeight / 2;
+        const speed = 1;
+        shark = new Shark(x, y, speed);
+      }
+
+      // Animation loop
+      function animate() {
+        context.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        // Draw bubbles
+        for (let i = 0; i < bubbles.length; i++) {
+          bubbles[i].draw();
+          bubbles[i].update();
+        }
+
+        // Draw fishes
+        for (let i = 0; i < fishes.length; i++) {
+          fishes[i].draw();
+          fishes[i].update();
+        }
+
+        // Draw shark
+        shark.draw();
+        shark.update();
+
+        requestAnimationFrame(animate);
+      }
+
+      // Resize canvas on window resize
+      window.addEventListener('resize', function () {
+        resizeCanvas();
+        initializeFishes();
+        initializeBubbles();
+        initializeShark();
+      });
+
+      // Initialize canvas, fishes, bubbles, and shark
+      resizeCanvas();
+      initializeFishes();
+      initializeBubbles();
+      initializeShark();
+
+      // Start animation
+      animate();
+    </script>
+  </body>
+</html>
